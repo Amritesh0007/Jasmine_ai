@@ -1,0 +1,218 @@
+[
+    {
+        "role": "user",
+        "content": "Hello what's your name?"
+    },
+    {
+        "role": "assistant",
+        "content": "My name is Jasmine."
+    },
+    {
+        "role": "user",
+        "content": "What's your name?"
+    },
+    {
+        "role": "assistant",
+        "content": "Jasmine."
+    },
+    {
+        "role": "user",
+        "content": "What's your name?"
+    },
+    {
+        "role": "assistant",
+        "content": "Jasmine."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "Los safari."
+    },
+    {
+        "role": "assistant",
+        "content": "I think you meant \"Los Safaris\" but I believe you are referring to the Safari browser or the Safari web browser developed by Apple, or possibly a zoo or wildlife area called a safari."
+    },
+    {
+        "role": "user",
+        "content": "Normal."
+    },
+    {
+        "role": "assistant",
+        "content": "That's a general term, could you be more specific?"
+    },
+    {
+        "role": "user",
+        "content": "Los safari."
+    },
+    {
+        "role": "assistant",
+        "content": "You're likely referring to Safari, the web browser developed by Apple."
+    },
+    {
+        "role": "user",
+        "content": "What is 2 + 2?"
+    },
+    {
+        "role": "assistant",
+        "content": "4."
+    },
+    {
+        "role": "user",
+        "content": "What is the differentiation of x square?"
+    },
+    {
+        "role": "assistant",
+        "content": "The differentiation of x^2 is 2x."
+    },
+    {
+        "role": "user",
+        "content": "Hello how are you?"
+    },
+    {
+        "role": "assistant",
+        "content": "I'm doing well."
+    },
+    {
+        "role": "user",
+        "content": "Say good morning in hindi."
+    },
+    {
+        "role": "assistant",
+        "content": "Good morning in Hindi is \"Suprabhat\"."
+    },
+    {
+        "role": "user",
+        "content": "Say good morning in tamil."
+    },
+    {
+        "role": "assistant",
+        "content": "Good morning in Tamil is \"Kaalan vaangum\" or \"Vanakkam\"."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "Say i care about you in tamil."
+    },
+    {
+        "role": "assistant",
+        "content": "In Tamil, \"I care about you\" can be said as \"Nee yaen pakkanum\" or \"Unnai paarthu pesuren\"."
+    },
+    {
+        "role": "user",
+        "content": "Say good night in tamil."
+    },
+    {
+        "role": "assistant",
+        "content": "Good night in Tamil is \"Nalliravu\" or \"Good night\" can also be said as \"Ennikkum vanakkam\"."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "Say how are you in marathi?"
+    },
+    {
+        "role": "assistant",
+        "content": "In Marathi, \"How are you\" is \"Tu kasa ahes\" or \"Kasa aahes tu\"."
+    },
+    {
+        "role": "user",
+        "content": "Kai zale bhau meaning in hindi."
+    },
+    {
+        "role": "assistant",
+        "content": "\"Kai zale bhau\" is a Marathi phrase, and its meaning in Hindi is \"\u0915\u094d\u092f\u093e \u0939\u0941\u0906 \u092d\u093e\u0908\" or \"What happened, brother\"."
+    },
+    {
+        "role": "user",
+        "content": "What is the integration of x square?"
+    },
+    {
+        "role": "assistant",
+        "content": "The integration of x^2 is (1/3)x^3 + C."
+    },
+    {
+        "role": "user",
+        "content": "Oneplus 3 x 3 + 3 x cube."
+    },
+    {
+        "role": "assistant",
+        "content": "To calculate this, we need to follow the order of operations (PEMDAS):\n\n1. **Cube 3**: 3^3 = 27\n2. **Multiply 3 by the result**: 3 x 27 = 81\n3. **Multiply 1 by 3**: 1 x 3 = 3 (assuming \"Oneplus 3\" means 1 + 3, but it seems like a phone model, so I'll treat it as a simple arithmetic operation)\n4. **Add 3**: 3 + 81 = 84\n\nHowever, if \"Oneplus 3\" refers to the phone model, please clarify the intended operation. Assuming it's a simple arithmetic operation, the result would be:\n\nOneplus 3 = 4 (assuming it means 1 + 3)\n4 x 3 + 3 x 27 = 12 + 81 = 93\n\nPlease confirm the correct interpretation."
+    },
+    {
+        "role": "user",
+        "content": "Hello jasmine."
+    },
+    {
+        "role": "assistant",
+        "content": "Hello."
+    },
+    {
+        "role": "user",
+        "content": "See good morning in telugu."
+    },
+    {
+        "role": "assistant",
+        "content": "Good morning in Telugu is \"Shubodhayam\"."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    },
+    {
+        "role": "user",
+        "content": "(query)."
+    },
+    {
+        "role": "assistant",
+        "content": "I didn't understand your question."
+    }
+]
