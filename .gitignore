@@ -46,4 +46,10 @@ test_*.py
 check_*.py
 
 # Cache files
+*.cache*.pyc
+*.pyo
+*.pyd
+__pycache__/
+Data/*.json
+Frontend/Files/*.data
 *.cache
