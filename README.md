@@ -10,6 +10,7 @@ An advanced AI assistant with integrated Google Gemini API capabilities.
 - **Mathematical Problem Solving**: Complex calculations and explanations
 - **Code Assistance**: Code explanation, debugging, and review
 - **Multimodal Capabilities**: Ready for image analysis (vision AI)
+- **Optimized Performance**: Faster response times with caching and efficient processing
 
 ### 💝 Enhanced Emotional Intelligence
 - Improved handling of emotional expressions with appropriate empathy
@@ -52,6 +53,7 @@ An advanced AI assistant with integrated Google Gemini API capabilities.
 - Enhanced TTS with better pause management and slower speech rate
 - Improved reliability with retry logic for audio services
 - Better context awareness in conversations
+- **Performance Optimizations**: Faster response times with caching, reduced conversation history, and optimized model selection
 
 ## API Functions Available
 - `generate_text(prompt, temperature)` - Generate text from a prompt
