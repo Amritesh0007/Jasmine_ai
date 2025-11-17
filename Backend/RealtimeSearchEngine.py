@@ -5,6 +5,7 @@ import datetime
 from dotenv import dotenv_values
 import os
 import sys
+import requests
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from Backend.GeminiAPI import gemini_api, chat_completion
 
@@ -70,6 +71,63 @@ def GoogleSearch(query):
         # Return a fallback message if search fails
         return f"Unable to perform search for '{query}'. Error: {str(e)}\n[start]\nNo search results available.\n[end]"
 
+def get_weather_info(location):
+    """Get weather information for a specific location using Open-Meteo API"""
+    try:
+        # First, we need to get the coordinates for the location
+        geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location}&count=1&language=en&format=json"
+        geo_response = requests.get(geocoding_url, timeout=10)
+        geo_data = geo_response.json()
+        
+        if 'results' not in geo_data or not geo_data['results']:
+            return f"Sorry, I couldn't find weather information for {location}."
+        
+        # Get coordinates
+        lat = geo_data['results'][0]['latitude']
+        lon = geo_data['results'][0]['longitude']
+        resolved_location = geo_data['results'][0]['name']
+        
+        # Get current weather
+        weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&timezone=auto"
+        weather_response = requests.get(weather_url, timeout=10)
+        weather_data = weather_response.json()
+        
+        if 'current_weather' not in weather_data:
+            return f"Sorry, I couldn't retrieve weather data for {resolved_location}."
+        
+        # Extract weather information
+        current = weather_data['current_weather']
+        temperature = current['temperature']
+        windspeed = current['windspeed']
+        weather_code = current['weathercode']
+        
+        # Simple weather code interpretation
+        weather_descriptions = {
+            0: "clear sky",
+            1: "mainly clear",
+            2: "partly cloudy",
+            3: "overcast",
+            45: "foggy",
+            48: "depositing rime fog",
+            51: "light drizzle",
+            53: "moderate drizzle",
+            55: "dense drizzle",
+            61: "slight rain",
+            63: "moderate rain",
+            65: "heavy rain",
+            71: "slight snow fall",
+            73: "moderate snow fall",
+            75: "heavy snow fall",
+            95: "thunderstorm",
+        }
+        
+        weather_description = weather_descriptions.get(weather_code, "unknown weather condition")
+        
+        return f"The current weather in {resolved_location} is {temperature}°C with {weather_description} and wind speed of {windspeed} km/h."
+        
+    except Exception as e:
+        return f"Sorry, I couldn't retrieve weather information for {location}. Error: {str(e)}"
+
 def AnswerModifier(Answer):
     lines = Answer.split('\n')
     non_empty_lines = [line for line in lines if line.strip()]
@@ -107,73 +165,104 @@ def RealtimeSearchEngine(prompt):
         messages = load(f)
     messages.append({"role": "user", "content": f"{prompt}"})
 
-    search_results = GoogleSearch(prompt)
+    # Check if this is a weather query
+    weather_keywords = ["weather", "temperature", "forecast", "climate", "rain", "snow", "sunny", "cloudy", "windy"]
+    is_weather_query = any(keyword in prompt.lower() for keyword in weather_keywords)
     
-    # Try using Gemini API first
-    if gemini_api.model:
-        # Prepare conversation history for context-aware responses
-        conversation_history = [
-            {"role": "user", "content": System},
-            {"role": "assistant", "content": "Understood. I'm ready to help with search results."}
-        ]
-        
-        # Add recent chat history for context (last 3 exchanges for faster processing)
-        recent_chats = messages[-3:] if len(messages) > 3 else messages
-        for entry in recent_chats:
-            conversation_history.append({
-                "role": entry["role"], 
-                "content": entry["content"]
-            })
-        
-        # Check if search results are available
-        if "No search results available" not in search_results:
-            # Add search results and current query
-            conversation_history.append({
-                "role": "user", 
-                "content": f"Here are the search results for '{prompt}': {search_results}"
-            })
-            conversation_history.append({
-                "role": "user", 
-                "content": f"Use the search results to provide an accurate answer to: {prompt}. Include real-time information if needed: {Information()}"
-            })
+    if is_weather_query:
+        # Extract location from the prompt
+        # Simple approach: assume the location is after "in" or "at"
+        location = ""
+        if " in " in prompt.lower():
+            location = prompt.lower().split(" in ", 1)[1].strip("?")
+        elif " at " in prompt.lower():
+            location = prompt.lower().split(" at ", 1)[1].strip("?")
         else:
-            # No search results, ask Gemini to provide general knowledge
-            conversation_history.append({
-                "role": "user", 
-                "content": f"No search results were found for '{prompt}'. Please provide an answer based on your general knowledge. Include real-time information if needed: {Information()}"
-            })
+            # If no specific location mentioned, try to extract a proper noun
+            words = prompt.split()
+            # Simple heuristic: assume capitalized words after weather keywords are locations
+            for i, word in enumerate(words):
+                if word.lower() in weather_keywords and i + 1 < len(words):
+                    location = words[i + 1]
+                    break
         
-        # Get response from Gemini with optimized parameters for speed
-        Answer = chat_completion(conversation_history, temperature=0.5, max_tokens=512)
-        
-        # Fallback if Gemini fails
-        if not Answer:
+        if location:
+            # Get weather information directly
+            weather_info = get_weather_info(location)
+            Answer = weather_info
+        else:
+            # Fall back to search if we can't determine location
+            search_results = GoogleSearch(prompt)
             Answer = f"I found the following search results for '{prompt}': {search_results}"
     else:
-        # Fallback to Groq if Gemini is not available
-        if client is None:
-            return f"I found the following search results for '{prompt}': {search_results}"
+        # Regular search for non-weather queries
+        search_results = GoogleSearch(prompt)
+        
+        # Try using Gemini API first
+        if gemini_api.model:
+            # Prepare conversation history for context-aware responses
+            conversation_history = [
+                {"role": "user", "content": System},
+                {"role": "assistant", "content": "Understood. I'm ready to help with search results."}
+            ]
+            
+            # Add recent chat history for context (last 3 exchanges for faster processing)
+            recent_chats = messages[-3:] if len(messages) > 3 else messages
+            for entry in recent_chats:
+                conversation_history.append({
+                    "role": entry["role"], 
+                    "content": entry["content"]
+                })
+            
+            # Check if search results are available
+            if "No search results available" not in search_results:
+                # Add search results and current query
+                conversation_history.append({
+                    "role": "user", 
+                    "content": f"Here are the search results for '{prompt}': {search_results}"
+                })
+                conversation_history.append({
+                    "role": "user", 
+                    "content": f"Use the search results to provide an accurate answer to: {prompt}. Include real-time information if needed: {Information()}"
+                })
+            else:
+                # No search results, ask Gemini to provide general knowledge
+                conversation_history.append({
+                    "role": "user", 
+                    "content": f"No search results were found for '{prompt}'. Please provide an answer based on your general knowledge. Include real-time information if needed: {Information()}"
+                })
+            
+            # Get response from Gemini with optimized parameters for speed
+            Answer = chat_completion(conversation_history, temperature=0.5, max_tokens=512)
+            
+            # Fallback if Gemini fails
+            if not Answer:
+                Answer = f"I found the following search results for '{prompt}': {search_results}"
+        else:
+            # Fallback to Groq if Gemini is not available
+            if client is None:
+                return f"I found the following search results for '{prompt}': {search_results}"
 
-        SystemChatBot.append({"role": "system", "content": search_results})
+            SystemChatBot.append({"role": "system", "content": search_results})
 
-        completion = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",  # Updated to a currently available model
-            messages=SystemChatBot + [{"role": "system", "content": Information()}] + messages,
-            max_tokens=2048,
-            temperature=0.7,
-            top_p=1,
-            stream=True,
-            stop=None
-        )
+            completion = client.chat.completions.create(
+                model="llama-3.3-70b-versatile",  # Updated to a currently available model
+                messages=SystemChatBot + [{"role": "system", "content": Information()}] + messages,
+                max_tokens=2048,
+                temperature=0.7,
+                top_p=1,
+                stream=True,
+                stop=None
+            )
 
-        Answer = ""
+            Answer = ""
 
-        for chunk in completion:
-            if chunk.choices[0].delta.content:
-                Answer += chunk.choices[0].delta.content
+            for chunk in completion:
+                if chunk.choices[0].delta.content:
+                    Answer += chunk.choices[0].delta.content
 
-        Answer = Answer.strip().replace("</s>", "")
-        SystemChatBot.pop()
+            Answer = Answer.strip().replace("</s>", "")
+            SystemChatBot.pop()
 
     messages.append({"role": "assistant", "content": Answer})
 
