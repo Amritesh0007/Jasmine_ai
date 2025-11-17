@@ -11,6 +11,7 @@ An advanced AI assistant with integrated Google Gemini API capabilities.
 - **Code Assistance**: Code explanation, debugging, and review
 - **Multimodal Capabilities**: Ready for image analysis (vision AI)
 - **Optimized Performance**: Faster response times with caching and efficient processing
+- **Direct Weather Information**: Accurate temperature and forecast data using Open-Meteo API
 
 ### 💝 Enhanced Emotional Intelligence
 - Improved handling of emotional expressions with appropriate empathy
@@ -54,6 +55,7 @@ An advanced AI assistant with integrated Google Gemini API capabilities.
 - Improved reliability with retry logic for audio services
 - Better context awareness in conversations
 - **Performance Optimizations**: Faster response times with caching, reduced conversation history, and optimized model selection
+- **Direct Weather Information**: Accurate temperature and forecast data without relying on search results
 
 ## API Functions Available
 - `generate_text(prompt, temperature)` - Generate text from a prompt
