@@ -57,8 +57,7 @@ class GeminiAPI:
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
-                    temperature=temperature,
-                    max_output_tokens=max_tokens
+                    temperature=temperature
                 )
             )
             
@@ -145,18 +144,22 @@ class GeminiAPI:
             print(f"Error analyzing image: {e}")
             return None
     
-    def solve_math_problem(self, problem: str) -> Optional[str]:
+    def solve_math_problem(self, problem: str, direct_answer: bool = True) -> Optional[str]:
         """
         Solve mathematical problems using Gemini.
         
         Args:
             problem (str): Mathematical problem to solve
+            direct_answer (bool): If True, request direct answer; if False, request step-by-step solution
             
         Returns:
             Optional[str]: Solution or None if failed
         """
         try:
-            prompt = f"Solve this mathematical problem step by step: {problem}"
+            if direct_answer:
+                prompt = f"Solve this mathematical problem and provide only the direct answer: {problem}"
+            else:
+                prompt = f"Solve this mathematical problem step by step: {problem}"
             return self.generate_text(prompt)
         except Exception as e:
             print(f"Error solving math problem: {e}")
@@ -218,9 +221,9 @@ def analyze_image(image_path: str, prompt: str = "Describe this image") -> Optio
     """Analyze an image using Gemini Vision."""
     return gemini_api.analyze_image(image_path, prompt)
 
-def solve_math_problem(problem: str) -> Optional[str]:
+def solve_math_problem(problem: str, direct_answer: bool = True) -> Optional[str]:
     """Solve a math problem using Gemini."""
-    return gemini_api.solve_math_problem(problem)
+    return gemini_api.solve_math_problem(problem, direct_answer)
 
 def explain_code(code: str, language: str = "Python") -> Optional[str]:
     """Explain code using Gemini."""

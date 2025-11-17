@@ -161,18 +161,21 @@ def parse_mathematical_expression(expression):
     
     return expression
 
-def differentiate_expression(expression, variable='x'):
+def differentiate_expression(expression, variable='x', direct_answer=False):
     """Calculate the derivative of an expression"""
     try:
         x = symbols(variable)
         parsed_expr = parse_mathematical_expression(expression)
         expr = sp.sympify(parsed_expr)
         derivative = diff(expr, x)
-        return f"The derivative of {expression.strip()} with respect to {variable} is: {derivative}"
+        if direct_answer:
+            return str(derivative)
+        else:
+            return f"The derivative of {expression.strip()} with respect to {variable} is: {derivative}"
     except Exception as e:
         return f"Error calculating derivative: {str(e)}"
 
-def integrate_expression(expression, variable='x', definite=False, lower_bound=None, upper_bound=None):
+def integrate_expression(expression, variable='x', definite=False, lower_bound=None, upper_bound=None, direct_answer=False):
     """Calculate the integral of an expression"""
     try:
         x = symbols(variable)
@@ -181,10 +184,16 @@ def integrate_expression(expression, variable='x', definite=False, lower_bound=N
         
         if definite and lower_bound is not None and upper_bound is not None:
             integral = integrate(expr, (x, lower_bound, upper_bound))
-            return f"The definite integral of {expression.strip()} from {lower_bound} to {upper_bound} is: {integral}"
+            if direct_answer:
+                return str(integral)
+            else:
+                return f"The definite integral of {expression.strip()} from {lower_bound} to {upper_bound} is: {integral}"
         else:
             integral = integrate(expr, x)
-            return f"The indefinite integral of {expression.strip()} is: {integral} + C"
+            if direct_answer:
+                return str(integral) + " + C"
+            else:
+                return f"The indefinite integral of {expression.strip()} is: {integral} + C"
     except Exception as e:
         return f"Error calculating integral: {str(e)}"
 
@@ -222,7 +231,7 @@ def solve_equation(expression):
     except Exception as e:
         return f"Error solving equation: {str(e)}"
 
-def process_mathematical_query(query):
+def process_mathematical_query(query, direct_answer=True):
     """Process mathematical queries and return appropriate responses"""
     query_lower = query.lower().strip().rstrip('?').rstrip('.')
     
@@ -232,9 +241,9 @@ def process_mathematical_query(query):
         # Check for definite integral
         if 'from' in query_lower and 'to' in query_lower:
             # Extract bounds (simplified approach)
-            return integrate_expression(expression, definite=True)
+            return integrate_expression(expression, definite=True, direct_answer=direct_answer)
         else:
-            return integrate_expression(expression)
+            return integrate_expression(expression, direct_answer=direct_answer)
     
     # Differentiation queries - expanded to include "differentiation"
     elif any(word in query_lower for word in ['differentiate', 'derivative', 'differentiation']):
@@ -246,7 +255,7 @@ def process_mathematical_query(query):
             match = re.search(r'with respect to\s+([a-zA-Z])', query_lower)
             if match:
                 variable = match.group(1)
-        return differentiate_expression(expression, variable)
+        return differentiate_expression(expression, variable, direct_answer=direct_answer)
     
     # Limit queries
     elif 'limit' in query_lower:
@@ -269,9 +278,9 @@ def process_mathematical_query(query):
                 match = re.search(r'with respect to\s+([a-zA-Z])', query_lower)
                 if match:
                     variable = match.group(1)
-            return differentiate_expression(expression, variable)
+            return differentiate_expression(expression, variable, direct_answer=direct_answer)
         elif 'integral' in query_lower or 'integrate' in query_lower or 'integration' in query_lower:
-            return integrate_expression(expression)
+            return integrate_expression(expression, direct_answer=direct_answer)
         else:
             # Try to solve as equation
             return solve_equation(expression)

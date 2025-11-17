@@ -176,17 +176,17 @@ def MainExecution():
                         from Backend.Mathematics import process_mathematical_query
                         QueryFinal = queries.replace("mathematics", "").strip()
                         
-                        # Try Gemini API for complex math first
+                        # Try Gemini API for complex math first with direct answer
                         if gemini_api.model:
-                            Answer = solve_math_problem(QueryFinal)
+                            Answer = solve_math_problem(QueryFinal, direct_answer=True)
                             if Answer:
                                 ShowTextToScreen(f"{Assistantname}: {Answer}")
                                 SetAsssistantStatus("Answering...")
                                 TextToSpeech(Answer)
                                 return True
                         
-                        # Fallback to existing math processor
-                        Answer = process_mathematical_query(QueryFinal)
+                        # Fallback to existing math processor with direct answer
+                        Answer = process_mathematical_query(QueryFinal, direct_answer=True)
                         ShowTextToScreen(f"{Assistantname}: {Answer}")
                         SetAsssistantStatus("Answering...")
                         TextToSpeech(Answer)
