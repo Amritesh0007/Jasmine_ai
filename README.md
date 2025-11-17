@@ -1,4 +1,4 @@
-# Jarvis AI Assistant
+# Jasmine AI Assistant
 
 Welcome to your personal AI assistant! This application provides voice and text-based interaction with advanced AI capabilities.
 
