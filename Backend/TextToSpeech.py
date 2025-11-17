@@ -23,74 +23,93 @@ async def TextToAudioFile(text) -> None:
 
     # Use Murf API for text-to-speech
     if MurfAPIKey:
-        try:
-            # Murf API endpoint for text-to-speech
-            url = "https://api.murf.ai/v1/speech/generate"
-            
-            # Use the api-key header format
-            headers = {
-                "api-key": MurfAPIKey,
-                "Content-Type": "application/json"
-            }
-            
-            # Request payload with a valid voice ID from the Murf API
-            # Add speech rate control to make it slower
-            payload = {
-                "text": text,
-                "voiceId": "en-US-alina",  # Use a valid voice ID from the API
-                "audioFormat": "wav"  # Request WAV format directly
-            }
-            
-            # Make the API request
-            response = requests.post(url, headers=headers, json=payload, timeout=30)
-            
-            # If WAV format is not supported, try with speed parameter
-            if response.status_code != 200:
+        # Try Murf API with retry logic
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                # Murf API endpoint for text-to-speech
+                url = "https://api.murf.ai/v1/speech/generate"
+                
+                # Use the api-key header format
+                headers = {
+                    "api-key": MurfAPIKey,
+                    "Content-Type": "application/json"
+                }
+                
+                # Request payload with a valid voice ID from the Murf API
+                # Add speech rate control to make it slower as per user preference
                 payload = {
                     "text": text,
-                    "voiceId": "en-US-alina",
-                    "audioFormat": "mp3",
-                    "speed": "slow"
+                    "voiceId": "en-US-alina",  # Use a valid voice ID from the API
+                    "audioFormat": "wav",  # Request WAV format directly
+                    "rate": "-20%"  # Slow down speech by 20% for better clarity
                 }
-                response = requests.post(url, headers=headers, json=payload, timeout=30)
-            
-            # If speed parameter is not supported either, try without rate control
-            if response.status_code != 200:
-                payload = {
-                    "text": text,
-                    "voiceId": "en-US-alina",
-                    "audioFormat": "mp3"
-                }
-                response = requests.post(url, headers=headers, json=payload, timeout=30)
-            
-            if response.status_code == 200:
-                # Parse the JSON response to get the audio URL
-                response_data = response.json()
-                if 'audioFile' in response_data:
-                    # Download the actual audio file
-                    audio_response = requests.get(response_data['audioFile'], timeout=30)
-                    if audio_response.status_code == 200:
-                        # Save the audio file
-                        with open(file_path, "wb") as f:
-                            f.write(audio_response.content)
-                        print("Audio generated successfully using Murf API")
-                        
-                        # Verify the file is valid by checking its size
-                        if os.path.getsize(file_path) > 0:
-                            return
+                
+                # Make the API request with shorter timeout for faster fallback
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
+                
+                # If WAV format is not supported, try with speed parameter
+                if response.status_code != 200:
+                    payload = {
+                        "text": text,
+                        "voiceId": "en-US-alina",
+                        "audioFormat": "mp3",
+                        "speed": "slow",
+                        "rate": "-20%"  # Slow down speech by 20% for better clarity
+                    }
+                    response = requests.post(url, headers=headers, json=payload, timeout=15)
+                
+                # If speed parameter is not supported either, try without rate control
+                if response.status_code != 200:
+                    payload = {
+                        "text": text,
+                        "voiceId": "en-US-alina",
+                        "audioFormat": "mp3"
+                    }
+                    response = requests.post(url, headers=headers, json=payload, timeout=15)
+                
+                if response.status_code == 200:
+                    # Parse the JSON response to get the audio URL
+                    response_data = response.json()
+                    if 'audioFile' in response_data:
+                        # Download the actual audio file
+                        audio_response = requests.get(response_data['audioFile'], timeout=15)
+                        if audio_response.status_code == 200:
+                            # Save the audio file
+                            with open(file_path, "wb") as f:
+                                f.write(audio_response.content)
+                            print("Audio generated successfully using Murf API")
+                            
+                            # Verify the file is valid by checking its size
+                            if os.path.getsize(file_path) > 0:
+                                return
+                            else:
+                                print("Murf API generated empty audio file, falling back to Edge TTS")
+                                os.remove(file_path)  # Remove the empty file
                         else:
-                            print("Murf API generated empty audio file, falling back to Edge TTS")
-                            os.remove(file_path)  # Remove the empty file
+                            print(f"Failed to download audio file: {audio_response.status_code}")
                     else:
-                        print(f"Failed to download audio file: {audio_response.status_code}")
+                        print("Murf API response doesn't contain audioFile")
                 else:
-                    print("Murf API response doesn't contain audioFile")
-            else:
-                print(f"Murf API error: {response.status_code} - {response.text}")
-        except Exception as e:
-            print(f"Error using Murf API: {e}")
+                    print(f"Murf API error: {response.status_code} - {response.text}")
+                    
+                    # If this is not the last attempt, wait before retrying
+                    if attempt < max_retries - 1:
+                        print(f"Retrying Murf API (attempt {attempt + 2}/{max_retries})...")
+                        time.sleep(2 ** attempt)  # Exponential backoff
+                        continue
+                    
+            except Exception as e:
+                print(f"Error using Murf API (attempt {attempt + 1}/{max_retries}): {e}")
+                
+                # If this is not the last attempt, wait before retrying
+                if attempt < max_retries - 1:
+                    print(f"Retrying Murf API (attempt {attempt + 2}/{max_retries})...")
+                    time.sleep(2 ** attempt)  # Exponential backoff
+                    continue
         
-        # Fallback to Edge TTS if Murf fails
+        # Fallback to Edge TTS if Murf fails after all retries
+        print("Falling back to Edge TTS after Murf API failures")
         await fallbackToEdgeTTS(text)
     else:
         # Fallback to Edge TTS if no Murf API key
@@ -102,8 +121,8 @@ async def fallbackToEdgeTTS(text):
         import edge_tts
         # Ensure we have a valid voice
         voice = AssistantVoice if AssistantVoice else "en-US-JennyNeural"
-        # Set a normal speech rate
-        communicate = edge_tts.Communicate(text, voice, pitch='+5Hz', rate='+0%')
+        # Set a slower speech rate as per user preference
+        communicate = edge_tts.Communicate(text, voice, pitch='+5Hz', rate='-20%')
         file_path = os.path.join("Data", "speech.wav")  # Keep .wav extension
         await communicate.save(file_path)
         print("Audio generated using Edge TTS (fallback)")
@@ -191,7 +210,12 @@ def TTS(Text, func=lambda r=None: True):
             return False
 
 def TextToSpeech(Text, func=lambda r=None: True):
-    Data = str(Text).split(".")
+    # Apply text processing to make speech clearer and slower
+    # Add slight pauses by adding commas where appropriate
+    sentence_count = Text.count('. ')
+    processed_text = Text.replace('. ', '. , ', sentence_count // 2)  # Add pauses to every other sentence
+    
+    Data = str(processed_text).split(".")
 
     responses = [
         "The rest of the result has been printed to the chat screen, kindly check it out sir.",
@@ -216,25 +240,61 @@ def TextToSpeech(Text, func=lambda r=None: True):
         "Sir, look at the chat screen for the complete answer."
     ]
 
+    # Check if this is an emotional response that should be spoken as a whole
+    emotional_indicators = [
+        "I understand you're feeling",
+        "I'm sorry to hear that",
+        "I appreciate you sharing",
+        "It sounds like you're going through",
+        "I can sense that you're",
+        "Thank you for trusting me"
+    ]
+    
+    is_emotional_response = any(indicator in Text for indicator in emotional_indicators)
+    
     # For long texts, break them into smaller chunks with normal pauses
-    if len(Text) > 250:  # Only chunk very long texts
-        # Break into reasonable segments
-        words = Text.split()
-        chunk_size = 10  # Larger chunks for normal speech
+    if len(Text) > 250 and not is_emotional_response:  # Only chunk very long texts, but not emotional responses
+        # Break into reasonable segments at sentence boundaries
+        sentences = Text.split('. ')
+        current_chunk = ""
+        chunk_word_count = 0
+        max_chunk_words = 30  # Maximum words per chunk for natural speech
         
-        for i in range(0, len(words), chunk_size):
-            chunk = " ".join(words[i:i+chunk_size])
-            if chunk.strip():
-                TTS(chunk, func)
-                # Add a normal pause between chunks
-                time.sleep(0.5)  # Shorter pause for normal speech
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if sentence:
+                sentence_word_count = len(sentence.split())
+                
+                # If adding this sentence would exceed the chunk size, or if it's a good breaking point
+                if chunk_word_count + sentence_word_count > max_chunk_words and current_chunk:
+                    # Play current chunk
+                    if current_chunk.strip():
+                        TTS(current_chunk, func)
+                        # Add a natural pause between chunks
+                        time.sleep(0.7)  # Longer pause for sentence boundaries
+                    
+                    # Start new chunk with current sentence
+                    current_chunk = sentence + ("." if not sentence.endswith(".") else "")
+                    chunk_word_count = sentence_word_count
+                else:
+                    # Add sentence to current chunk
+                    if current_chunk:
+                        current_chunk += ". " + sentence
+                    else:
+                        current_chunk = sentence + ("." if not sentence.endswith(".") else "")
+                    chunk_word_count += sentence_word_count
+        
+        # Play the last chunk
+        if current_chunk.strip():
+            TTS(current_chunk, func)
+            time.sleep(0.5)
                 
         # For long texts, also add the response
         if len(Data) > 4:
             TTS(random.choice(responses), func)
             time.sleep(0.3)
     else:
-        # For shorter texts, play normally
+        # For shorter texts or emotional responses, play normally as a single unit
         TTS(Text, func)
         if len(Text) < 30:
             time.sleep(0.3)  # Short pause at the end for short responses

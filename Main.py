@@ -15,6 +15,7 @@ from Backend.Automation import Automation
 from Backend.SpeechToText import SpeechRecognition
 from Backend.Chatbot import ChatBot
 from Backend.TextToSpeech import TextToSpeech
+from Backend.GeminiAPI import gemini_api, generate_text, solve_math_problem
 from dotenv import dotenv_values
 from asyncio import run
 from time import sleep
@@ -174,6 +175,17 @@ def MainExecution():
                     try:
                         from Backend.Mathematics import process_mathematical_query
                         QueryFinal = queries.replace("mathematics", "").strip()
+                        
+                        # Try Gemini API for complex math first
+                        if gemini_api.model:
+                            Answer = solve_math_problem(QueryFinal)
+                            if Answer:
+                                ShowTextToScreen(f"{Assistantname}: {Answer}")
+                                SetAsssistantStatus("Answering...")
+                                TextToSpeech(Answer)
+                                return True
+                        
+                        # Fallback to existing math processor
                         Answer = process_mathematical_query(QueryFinal)
                         ShowTextToScreen(f"{Assistantname}: {Answer}")
                         SetAsssistantStatus("Answering...")
@@ -190,6 +202,7 @@ def MainExecution():
                     QueryFinal = queries.replace("general", "")
                     
                     # Handle special emotional cases with predefined responses
+                    # Be more specific to avoid triggering on translation requests
                     emotional_queries = [
                         "im in love with you", 
                         "i love you", 
@@ -199,12 +212,58 @@ def MainExecution():
                         "will you be my boyfriend"
                     ]
                     
-                    # Check if the query contains emotional content
-                    if any(emotion in QueryFinal.lower() for emotion in emotional_queries):
+                    # Check if the query contains emotional content but not translation requests
+                    # Translation requests typically contain words like 'translate', 'language', 'french', etc.
+                    translation_indicators = [
+                        "translate", "translation", "language", "french", "spanish", "german", 
+                        "italian", "portuguese", "russian", "chinese", "japanese", "korean",
+                        "hindi", "arabic", "urdu", "bengali", "punjabi", "tamil", "telugu",
+                        "marathi", "gujarati", "kannada", "malayalam", "sinhala", "thai",
+                        "vietnamese", "indonesian", "malay", "filipino", "burmese", "khmer"
+                    ]
+                    
+                    is_emotional = any(emotion in QueryFinal.lower() for emotion in emotional_queries)
+                    is_translation_request = any(indicator in QueryFinal.lower() for indicator in translation_indicators)
+                    
+                    # Only treat as emotional if it's an emotional query and NOT a translation request
+                    if is_emotional and not is_translation_request:
                         # Provide a polite, predefined response
                         Answer = "I appreciate your sentiment, but as an AI assistant, I don't have personal feelings or relationships. I'm here to help you with information and tasks. How else can I assist you today?"
                     else:
-                        Answer = ChatBot(QueryModifier(QueryFinal))
+                        # Try Gemini API for enhanced responses
+                        if gemini_api.model:
+                            # Create conversation history for context-aware responses
+                            conversation_history = [
+                                {"role": "user", "content": f"You are {Assistantname}, a helpful AI assistant. Respond naturally and concisely."},
+                                {"role": "assistant", "content": "Understood. I'm ready to help!"}
+                            ]
+                            
+                            # Add recent chat history for context (last 5 exchanges)
+                            try:
+                                with open('Data/ChatLog.json', 'r', encoding='utf-8') as file:
+                                    import json
+                                    chatlog_data = json.load(file)
+                                    # Get last 5 exchanges
+                                    recent_chats = chatlog_data[-10:] if len(chatlog_data) > 10 else chatlog_data
+                                    for entry in recent_chats:
+                                        conversation_history.append({
+                                            "role": entry["role"], 
+                                            "content": entry["content"]
+                                        })
+                            except Exception as e:
+                                print(f"Could not load chat history: {e}")
+                            
+                            # Add current query
+                            conversation_history.append({"role": "user", "content": QueryFinal})
+                            
+                            # Get response from Gemini
+                            gemini_response = gemini_api.chat_completion(conversation_history)
+                            if gemini_response:
+                                Answer = gemini_response
+                            else:
+                                Answer = ChatBot(QueryModifier(QueryFinal))
+                        else:
+                            Answer = ChatBot(QueryModifier(QueryFinal))
                     
                     ShowTextToScreen(f"{Assistantname}: {Answer}")
                     SetAsssistantStatus("Answering...")

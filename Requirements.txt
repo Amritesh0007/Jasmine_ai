@@ -18,3 +18,4 @@ PyQt5
 webdriver-manager
 sympy
 numpy
+google-generativeai
