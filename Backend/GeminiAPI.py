@@ -5,6 +5,7 @@ from typing import Optional, List, Dict, Any
 import PIL.Image
 import base64
 import io
+import time
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
@@ -15,6 +16,9 @@ GEMINI_API_KEY = env_vars.get("GEMINI_API_KEY")
 if GEMINI_API_KEY:
     genai.configure(api_key=GEMINI_API_KEY)
 
+# Simple cache for responses
+_response_cache = {}
+
 class GeminiAPI:
     """A class to interact with Google's Gemini API for various AI capabilities."""
     
@@ -22,17 +26,18 @@ class GeminiAPI:
         """Initialize the Gemini API client."""
         self.model = None
         if GEMINI_API_KEY:
-            # Use the correct model names
-            self.model = genai.GenerativeModel('models/gemini-flash-latest')
-            self.vision_model = genai.GenerativeModel('models/gemini-flash-latest')
+            # Use the faster model for general queries
+            self.model = genai.GenerativeModel('models/gemini-2.0-flash')
+            self.vision_model = genai.GenerativeModel('models/gemini-2.0-flash')
     
-    def generate_text(self, prompt: str, temperature: float = 0.7) -> Optional[str]:
+    def generate_text(self, prompt: str, temperature: float = 0.7, max_tokens: int = 1024) -> Optional[str]:
         """
         Generate text based on a prompt.
         
         Args:
             prompt (str): The input prompt for text generation
             temperature (float): Controls randomness in generation (0.0 to 1.0)
+            max_tokens (int): Maximum number of tokens to generate
             
         Returns:
             Optional[str]: Generated text or None if failed
@@ -41,24 +46,38 @@ class GeminiAPI:
             if not self.model:
                 raise ValueError("Gemini API not configured. Check your API key.")
                 
+            # Check cache first
+            cache_key = f"{prompt}_{temperature}_{max_tokens}"
+            if cache_key in _response_cache:
+                # Return cached response if it's less than 5 minutes old
+                cached_time, cached_response = _response_cache[cache_key]
+                if time.time() - cached_time < 300:  # 5 minutes
+                    return cached_response
+            
             response = self.model.generate_content(
                 prompt,
                 generation_config=genai.types.GenerationConfig(
-                    temperature=temperature
+                    temperature=temperature,
+                    max_output_tokens=max_tokens
                 )
             )
+            
+            # Cache the response
+            _response_cache[cache_key] = (time.time(), response.text)
+            
             return response.text
         except Exception as e:
             print(f"Error generating text: {e}")
             return None
     
-    def chat_completion(self, messages: List[Dict[str, str]], temperature: float = 0.7) -> Optional[str]:
+    def chat_completion(self, messages: List[Dict[str, str]], temperature: float = 0.7, max_tokens: int = 1024) -> Optional[str]:
         """
         Generate a chat completion based on conversation history.
         
         Args:
             messages (List[Dict[str, str]]): List of message dictionaries with 'role' and 'content'
             temperature (float): Controls randomness in generation
+            max_tokens (int): Maximum number of tokens to generate
             
         Returns:
             Optional[str]: Generated response or None if failed
@@ -66,6 +85,17 @@ class GeminiAPI:
         try:
             if not self.model:
                 raise ValueError("Gemini API not configured. Check your API key.")
+            
+            # Create a simplified cache key
+            messages_str = str([(msg['role'], msg['content']) for msg in messages])
+            cache_key = f"chat_{messages_str}_{temperature}_{max_tokens}"
+            
+            # Check cache first
+            if cache_key in _response_cache:
+                # Return cached response if it's less than 5 minutes old
+                cached_time, cached_response = _response_cache[cache_key]
+                if time.time() - cached_time < 300:  # 5 minutes
+                    return cached_response
             
             # Convert messages to Gemini format
             chat_history = []
@@ -77,7 +107,14 @@ class GeminiAPI:
             
             # Start chat and send message
             chat = self.model.start_chat(history=chat_history[:-1])
-            response = chat.send_message(chat_history[-1]['parts'][0])
+            response = chat.send_message(chat_history[-1]['parts'][0], generation_config=genai.types.GenerationConfig(
+                temperature=temperature,
+                max_output_tokens=max_tokens
+            ))
+            
+            # Cache the response
+            _response_cache[cache_key] = (time.time(), response.text)
+            
             return response.text
         except Exception as e:
             print(f"Error in chat completion: {e}")
@@ -169,13 +206,13 @@ class GeminiAPI:
 gemini_api = GeminiAPI()
 
 # Convenience functions for direct access
-def generate_text(prompt: str, temperature: float = 0.7) -> Optional[str]:
+def generate_text(prompt: str, temperature: float = 0.7, max_tokens: int = 1024) -> Optional[str]:
     """Generate text using Gemini."""
-    return gemini_api.generate_text(prompt, temperature)
+    return gemini_api.generate_text(prompt, temperature, max_tokens)
 
-def chat_completion(messages: List[Dict[str, str]], temperature: float = 0.7) -> Optional[str]:
+def chat_completion(messages: List[Dict[str, str]], temperature: float = 0.7, max_tokens: int = 1024) -> Optional[str]:
     """Get chat completion from Gemini."""
-    return gemini_api.chat_completion(messages, temperature)
+    return gemini_api.chat_completion(messages, temperature, max_tokens)
 
 def analyze_image(image_path: str, prompt: str = "Describe this image") -> Optional[str]:
     """Analyze an image using Gemini Vision."""

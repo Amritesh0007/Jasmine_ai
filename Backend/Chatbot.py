@@ -121,8 +121,8 @@ def ChatBot(Query):
                     {"role": "assistant", "content": "Understood. I'm ready to help with emotional intelligence and empathy."}
                 ]
                 
-                # Add recent chat history for context (last 10 exchanges)
-                recent_chats = messages[-10:] if len(messages) > 10 else messages
+                # Add recent chat history for context (last 3 exchanges for faster processing)
+                recent_chats = messages[-3:] if len(messages) > 3 else messages
                 for entry in recent_chats:
                     conversation_history.append({
                         "role": entry["role"], 
@@ -135,8 +135,8 @@ def ChatBot(Query):
                     "content": f"Consider emotional context in your response: {Query}"
                 })
                 
-                # Get response from Gemini with higher emotional intelligence
-                Answer = chat_completion(conversation_history, temperature=0.7)
+                # Get response from Gemini with optimized parameters for speed
+                Answer = chat_completion(conversation_history, temperature=0.5, max_tokens=512)
                 
                 # Fallback to basic response if Gemini fails
                 if not Answer:

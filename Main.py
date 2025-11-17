@@ -238,13 +238,13 @@ def MainExecution():
                                 {"role": "assistant", "content": "Understood. I'm ready to help!"}
                             ]
                             
-                            # Add recent chat history for context (last 5 exchanges)
+                            # Add recent chat history for context (last 2 exchanges for faster processing)
                             try:
                                 with open('Data/ChatLog.json', 'r', encoding='utf-8') as file:
                                     import json
                                     chatlog_data = json.load(file)
-                                    # Get last 5 exchanges
-                                    recent_chats = chatlog_data[-10:] if len(chatlog_data) > 10 else chatlog_data
+                                    # Get last 2 exchanges for faster processing
+                                    recent_chats = chatlog_data[-2:] if len(chatlog_data) > 2 else chatlog_data
                                     for entry in recent_chats:
                                         conversation_history.append({
                                             "role": entry["role"], 
@@ -256,8 +256,8 @@ def MainExecution():
                             # Add current query
                             conversation_history.append({"role": "user", "content": QueryFinal})
                             
-                            # Get response from Gemini
-                            gemini_response = gemini_api.chat_completion(conversation_history)
+                            # Get response from Gemini with optimized parameters
+                            gemini_response = gemini_api.chat_completion(conversation_history, temperature=0.5, max_tokens=512)
                             if gemini_response:
                                 Answer = gemini_response
                             else:

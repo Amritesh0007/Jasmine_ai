@@ -117,8 +117,8 @@ def RealtimeSearchEngine(prompt):
             {"role": "assistant", "content": "Understood. I'm ready to help with search results."}
         ]
         
-        # Add recent chat history for context (last 10 exchanges)
-        recent_chats = messages[-10:] if len(messages) > 10 else messages
+        # Add recent chat history for context (last 3 exchanges for faster processing)
+        recent_chats = messages[-3:] if len(messages) > 3 else messages
         for entry in recent_chats:
             conversation_history.append({
                 "role": entry["role"], 
@@ -143,8 +143,8 @@ def RealtimeSearchEngine(prompt):
                 "content": f"No search results were found for '{prompt}'. Please provide an answer based on your general knowledge. Include real-time information if needed: {Information()}"
             })
         
-        # Get response from Gemini
-        Answer = chat_completion(conversation_history, temperature=0.7)
+        # Get response from Gemini with optimized parameters for speed
+        Answer = chat_completion(conversation_history, temperature=0.5, max_tokens=512)
         
         # Fallback if Gemini fails
         if not Answer:
