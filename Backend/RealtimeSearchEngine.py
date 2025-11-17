@@ -1,5 +1,4 @@
 from googlesearch import search
-from groq import Groq
 from json import load, dump, JSONDecodeError
 import datetime
 from dotenv import dotenv_values
@@ -13,14 +12,6 @@ env_vars = dotenv_values(".env")
 
 Username = env_vars.get("Username")
 Assistantname = env_vars.get("Assistantname")
-GroqAPIKey = env_vars.get("GroqAPIKey")
-
-# Clean up the API key if it exists
-if GroqAPIKey:
-    GroqAPIKey = GroqAPIKey.strip().strip('"').strip("'")
-
-# Initialize client only if API key is available
-client = Groq(api_key=GroqAPIKey) if GroqAPIKey else None
 
 System = f"""Hello, I am {Username}, You are a very accurate and advanced AI chatbot named {Assistantname} which has real-time up-to-date information from the internet.
 *** Provide Answers In a Professional Way, make sure to add full stops, commas, question marks, and use proper grammar.***
@@ -134,11 +125,12 @@ def AnswerModifier(Answer):
     modified_answer = '\n'.join(non_empty_lines)
     return modified_answer
 
-SystemChatBot = [
-    {"role": "system", "content": System},
-    {"role": "user", "content": "Hi"},
-    {"role": "assistant", "content": "Hello, Sir, how can I help you?"}
-]
+# SystemChatBot is no longer needed since we're using Gemini API exclusively
+# SystemChatBot = [
+#     {"role": "system", "content": System},
+#     {"role": "user", "content": "Hi"},
+#     {"role": "assistant", "content": "Hello, Sir, how can I help you?"}
+# ]
 
 def Information():
     data = ""
@@ -159,7 +151,7 @@ def Information():
     return data
 
 def RealtimeSearchEngine(prompt):
-    global SystemChatBot, messages
+    global messages
     
     with open(os.path.join("Data", "ChatLog.json"), "r") as f:
         messages = load(f)
@@ -198,7 +190,7 @@ def RealtimeSearchEngine(prompt):
         # Regular search for non-weather queries
         search_results = GoogleSearch(prompt)
         
-        # Try using Gemini API first
+        # Use Gemini API for processing search results
         if gemini_api.model:
             # Prepare conversation history for context-aware responses
             conversation_history = [
@@ -239,30 +231,8 @@ def RealtimeSearchEngine(prompt):
             if not Answer:
                 Answer = f"I found the following search results for '{prompt}': {search_results}"
         else:
-            # Fallback to Groq if Gemini is not available
-            if client is None:
-                return f"I found the following search results for '{prompt}': {search_results}"
-
-            SystemChatBot.append({"role": "system", "content": search_results})
-
-            completion = client.chat.completions.create(
-                model="llama-3.3-70b-versatile",  # Updated to a currently available model
-                messages=SystemChatBot + [{"role": "system", "content": Information()}] + messages,
-                max_tokens=2048,
-                temperature=0.7,
-                top_p=1,
-                stream=True,
-                stop=None
-            )
-
-            Answer = ""
-
-            for chunk in completion:
-                if chunk.choices[0].delta.content:
-                    Answer += chunk.choices[0].delta.content
-
-            Answer = Answer.strip().replace("</s>", "")
-            SystemChatBot.pop()
+            # If Gemini is not available, return search results directly
+            Answer = f"I found the following search results for '{prompt}': {search_results}"
 
     messages.append({"role": "assistant", "content": Answer})
 
