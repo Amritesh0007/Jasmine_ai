@@ -1,90 +1,63 @@
-# Jasmine AI Assistant
+# Jasmine AI - Enhanced with Google Gemini API
 
-Welcome to your personal AI assistant! This application provides voice and text-based interaction with advanced AI capabilities.
+An advanced AI assistant with integrated Google Gemini API capabilities.
 
-## Current Status
+## Key Features Implemented
 
-✅ **Application Running Successfully**
-- GUI interface is active
-- Text-based interaction works
-- Voice recognition is now working!
-- Application automation (open/close apps, YouTube search) functional
-- AI chat and real-time search working
+### 🚀 Google Gemini API Integration
+- **Text Generation**: Advanced content creation and summarization
+- **Chat Completions**: Context-aware conversational AI
+- **Mathematical Problem Solving**: Complex calculations and explanations
+- **Code Assistance**: Code explanation, debugging, and review
+- **Multimodal Capabilities**: Ready for image analysis (vision AI)
 
-## How to Use
+### 💝 Enhanced Emotional Intelligence
+- Improved handling of emotional expressions with appropriate empathy
+- Better distinction between translation requests and emotional expressions
+- Context-aware responses that maintain appropriate boundaries
 
-### Method 1: Voice Interface (Recommended)
-1. Run the main application:
-   ```bash
-   python3 Main.py
+### 🗣️ Improved Text-to-Speech
+- Slower speech rate for better comprehension (20% slower)
+- Enhanced pause management for natural speech flow
+- Better handling of emotional responses without breaking gaps
+- Retry logic for more reliable audio generation
+
+### 🔍 Advanced Search Capabilities
+- Real-time information retrieval with Gemini-powered processing
+- Fallback mechanisms for search service reliability
+
+## Setup Instructions
+
+1. **Add your API Keys** to `.env`:
    ```
-2. Activate microphone:
-   ```bash
-   python3 toggle_microphone.py true
+   GEMINI_API_KEY=your_gemini_api_key_here
    ```
-3. Speak clearly into your microphone when the Chrome window opens
 
-### Method 2: Text Interface
-```bash
-cd /Users/amriteshkumar/Jarvis/jarvis-ai-assistant
-python3 text_interface.py
-```
-
-Examples of what you can do:
-- "Hello, how are you?" (General conversation)
-- "Open notepad" (Opens TextEdit on macOS)
-- "Play some music" (Opens YouTube search)
-- "What's the weather like today?" (Real-time search)
-- "Write an application for sick leave" (Content generation)
-
-## Features
-
-### 🤖 AI Capabilities
-- General conversation with AI chatbot
-- Real-time information search
-- Content generation (letters, applications, etc.)
-
-### ⚙️ Automation
-- Open/close applications
-- Play music on YouTube
-- Search Google
-- System controls (Windows only)
-
-### 🎵 Supported Commands
-- "Open [app name]" (notepad, chrome, calculator, etc.)
-- "Close [app name]"
-- "Play [music/query]"
-- "Search for [topic]"
-- "Write [content type]"
-
-## Troubleshooting
-
-### Voice Recognition Issues
-If voice recognition stops working:
-1. Check that the microphone is activated:
+2. **Install Dependencies**:
    ```bash
-   cat Frontend/Files/Mic.data
+   pip install -r Requirements.txt
    ```
-   Should show "True"
 
-2. Restart the application if needed
+3. **Run the Application**:
+   ```bash
+   python Main.py
+   ```
 
-### Application Opening Issues
-If apps don't open, try using more specific names:
-- "Open TextEdit" instead of "Open notepad"
-- "Open Google Chrome" instead of "Open chrome"
+## Documentation
+- [GEMINI_INTEGRATION.md](GEMINI_INTEGRATION.md) - Detailed Gemini API integration guide
+- [USAGE_INSTRUCTIONS.md](USAGE_INSTRUCTIONS.md) - General usage instructions
 
-## File Structure
-- `Main.py` - Main application entry point
-- `text_interface.py` - Text-based interface
-- `toggle_microphone.py` - Control voice recognition
-- `Backend/` - AI and automation modules
-- `Frontend/` - GUI interface
-- `Data/` - Chat logs and temporary files
+## Recent Improvements
+- Fixed translation request handling (no longer confused with emotional expressions)
+- Enhanced TTS with better pause management and slower speech rate
+- Improved reliability with retry logic for audio services
+- Better context awareness in conversations
 
-## Exiting the Application
-- For GUI: Close the application window
-- For text interface: Type 'exit' or press Ctrl+C
+## API Functions Available
+- `generate_text(prompt, temperature)` - Generate text from a prompt
+- `chat_completion(messages, temperature)` - Multi-turn chat completion
+- `solve_math_problem(problem)` - Solve mathematical problems
+- `explain_code(code, language)` - Explain code functionality
+- `debug_code(code, error, language)` - Help debug code issues
 
-## Need Help?
-Check `USAGE_INSTRUCTIONS.md` for detailed usage information.
+For more details, see [GEMINI_INTEGRATION.md](GEMINI_INTEGRATION.md).
