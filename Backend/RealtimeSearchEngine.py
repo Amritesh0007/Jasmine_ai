@@ -163,15 +163,61 @@ def RealtimeSearchEngine(prompt):
     
     if is_weather_query:
         # Extract location from the prompt
-        # Simple approach: assume the location is after "in" or "at"
+        # Improved approach to handle various query formats
         location = ""
-        if " in " in prompt.lower():
-            location = prompt.lower().split(" in ", 1)[1].strip("?")
-        elif " at " in prompt.lower():
-            location = prompt.lower().split(" at ", 1)[1].strip("?")
+        
+        # Handle queries that start with the assistant name
+        clean_prompt = prompt.lower()
+        if clean_prompt.startswith("jasmine "):
+            clean_prompt = clean_prompt[8:]  # Remove "jasmine " from the beginning
+        
+        # Simple approach: assume the location is after "in" or "at"
+        if " in " in clean_prompt:
+            location_part = clean_prompt.split(" in ", 1)[1].strip("?")
+            # Remove common trailing words that are not part of location
+            location_words = location_part.split()
+            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
+                location = " ".join(location_words[:-1])
+            else:
+                location = location_part
+        elif " at " in clean_prompt:
+            location_part = clean_prompt.split(" at ", 1)[1].strip("?")
+            # Remove common trailing words that are not part of location
+            location_words = location_part.split()
+            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
+                location = " ".join(location_words[:-1])
+            else:
+                location = location_part
         else:
-            # If no specific location mentioned, try to extract a proper noun
-            words = prompt.split()
+            # Try to find location after weather-related keywords
+            for keyword in weather_keywords:
+                if keyword in clean_prompt:
+                    parts = clean_prompt.split(keyword, 1)
+                    if len(parts) > 1:
+                        # Look for the location after the keyword
+                        after_keyword = parts[1].strip()
+                        if " in " in after_keyword:
+                            location_part = after_keyword.split(" in ", 1)[1].strip("?")
+                            # Remove common trailing words that are not part of location
+                            location_words = location_part.split()
+                            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
+                                location = " ".join(location_words[:-1])
+                            else:
+                                location = location_part
+                            break
+                        elif " at " in after_keyword:
+                            location_part = after_keyword.split(" at ", 1)[1].strip("?")
+                            # Remove common trailing words that are not part of location
+                            location_words = location_part.split()
+                            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
+                                location = " ".join(location_words[:-1])
+                            else:
+                                location = location_part
+                            break
+        
+        # If still no location, try to extract a proper noun
+        if not location:
+            words = clean_prompt.split()
             # Simple heuristic: assume capitalized words after weather keywords are locations
             for i, word in enumerate(words):
                 if word.lower() in weather_keywords and i + 1 < len(words):
