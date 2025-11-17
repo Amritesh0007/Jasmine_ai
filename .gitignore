@@ -53,3 +53,4 @@ __pycache__/
 Data/*.json
 Frontend/Files/*.data
 *.cache
+.env
