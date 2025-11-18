@@ -19,3 +19,5 @@ webdriver-manager
 sympy
 numpy
 google-generativeai
+PyAudio
+wave

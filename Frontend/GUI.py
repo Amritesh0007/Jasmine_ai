@@ -494,10 +494,12 @@ def GraphicalUserInterface():
         
         # Create buttons
         mic_button = FuturisticButton("🎤 TOGGLE MIC")
+        gemini_asr_button = FuturisticButton("🎙️ GEMINI ASR")
         settings_button = FuturisticButton("⚙️ SETTINGS")
         exit_button = FuturisticButton("❌ EXIT")
         
         button_layout.addWidget(mic_button)
+        button_layout.addWidget(gemini_asr_button)
         button_layout.addWidget(settings_button)
         button_layout.addWidget(exit_button)
         
@@ -607,8 +609,44 @@ def GraphicalUserInterface():
         window.setLayout(main_layout)
         window.show()
         
+        # Function to handle Gemini ASR button click
+        def start_gemini_asr():
+            print("Starting Gemini ASR...")
+            try:
+                # Import and call the actual Gemini ASR function
+                from Backend.SpeechToText import GeminiSpeechRecognition
+                result = GeminiSpeechRecognition()
+                
+                # Show the result in a message box
+                from PyQt6.QtWidgets import QMessageBox
+                msg = QMessageBox()
+                msg.setWindowTitle("Gemini ASR Result")
+                if result:
+                    msg.setText(f"Transcribed text:\n{result}")
+                else:
+                    msg.setText("Failed to transcribe audio or no speech detected.")
+                msg.setStyleSheet("""
+                    background-color: #001f3f;
+                    color: #00ffcc;
+                    font-family: 'Courier New', monospace;
+                """)
+                msg.exec()
+            except Exception as e:
+                print(f"Error in Gemini ASR: {e}")
+                from PyQt6.QtWidgets import QMessageBox
+                msg = QMessageBox()
+                msg.setWindowTitle("Gemini ASR Error")
+                msg.setText(f"Error occurred during speech recognition:\n{str(e)}")
+                msg.setStyleSheet("""
+                    background-color: #001f3f;
+                    color: #00ffcc;
+                    font-family: 'Courier New', monospace;
+                """)
+                msg.exec()
+        
         # Connect button signals
         exit_button.clicked.connect(app.quit)
+        gemini_asr_button.clicked.connect(start_gemini_asr)
         
         print("GUI started successfully.")
         print("The application is now running. Close the GUI window to exit.")
@@ -827,6 +865,33 @@ def GraphicalUserInterface():
                 }
             """)
             
+            gemini_asr_button = QPushButton("🎙️ GEMINI ASR")
+            gemini_asr_button.setStyleSheet("""
+                QPushButton {
+                    background-color: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #001f3f,
+                        stop: 1 #0074D9
+                    );
+                    color: #00ffcc;
+                    border: 2px solid #00ffff;
+                    border-radius: 15px;
+                    padding: 12px 20px;
+                    font-size: 16px;
+                    font-weight: bold;
+                    font-family: 'Courier New', monospace;
+                }
+                QPushButton:hover {
+                    background-color: qlineargradient(
+                        x1: 0, y1: 0, x2: 1, y2: 1,
+                        stop: 0 #00ffff,
+                        stop: 1 #0074D9
+                    );
+                    border: 2px solid #ff00ff;
+                    color: #ffffff;
+                }
+            """)
+            
             exit_button = QPushButton("❌ EXIT")
             exit_button.setStyleSheet("""
                 QPushButton {
@@ -855,6 +920,7 @@ def GraphicalUserInterface():
             """)
             
             button_layout.addWidget(mic_button)
+            button_layout.addWidget(gemini_asr_button)
             button_layout.addWidget(settings_button)
             button_layout.addWidget(exit_button)
             
@@ -964,8 +1030,44 @@ def GraphicalUserInterface():
             window.setLayout(main_layout)
             window.show()
             
+            # Function to handle Gemini ASR button click
+            def start_gemini_asr():
+                print("Starting Gemini ASR...")
+                try:
+                    # Import and call the actual Gemini ASR function
+                    from Backend.SpeechToText import GeminiSpeechRecognition
+                    result = GeminiSpeechRecognition()
+                    
+                    # Show the result in a message box
+                    from PyQt5.QtWidgets import QMessageBox
+                    msg = QMessageBox()
+                    msg.setWindowTitle("Gemini ASR Result")
+                    if result:
+                        msg.setText(f"Transcribed text:\n{result}")
+                    else:
+                        msg.setText("Failed to transcribe audio or no speech detected.")
+                    msg.setStyleSheet("""
+                        background-color: #001f3f;
+                        color: #00ffcc;
+                        font-family: 'Courier New', monospace;
+                    """)
+                    msg.exec_()
+                except Exception as e:
+                    print(f"Error in Gemini ASR: {e}")
+                    from PyQt5.QtWidgets import QMessageBox
+                    msg = QMessageBox()
+                    msg.setWindowTitle("Gemini ASR Error")
+                    msg.setText(f"Error occurred during speech recognition:\n{str(e)}")
+                    msg.setStyleSheet("""
+                        background-color: #001f3f;
+                        color: #00ffcc;
+                        font-family: 'Courier New', monospace;
+                    """)
+                    msg.exec_()
+            
             # Connect button signals
             exit_button.clicked.connect(app.quit)
+            gemini_asr_button.clicked.connect(start_gemini_asr)
             
             print("GUI started successfully.")
             print("The application is now running. Close the GUI window to exit.")

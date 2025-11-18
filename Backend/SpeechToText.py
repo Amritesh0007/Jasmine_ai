@@ -7,6 +7,16 @@ import os
 import platform
 from dotenv import dotenv_values
 from googletrans import Translator
+try:
+    import pyaudio
+    import wave
+    import threading
+    HAS_PYAUDIO = True
+except ImportError:
+    HAS_PYAUDIO = False
+    print("PyAudio not available. Audio recording functionality will be limited.")
+import time
+from Backend.GeminiAPI import speech_to_text
 
 # Load environment variables with absolute path
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
@@ -163,8 +173,49 @@ def SpeechRecognition():
         except Exception:
             pass
 
+# Gemini ASR Implementation
+
+def GeminiSpeechRecognition(audio_file_path=None):
+    """Speech recognition using Google Gemini API"""
+    if audio_file_path:
+        # Use provided audio file
+        try:
+            transcribed_text = speech_to_text(audio_file_path)
+            if transcribed_text:
+                print(f"Transcribed text: {transcribed_text}")
+                return QueryModifier(transcribed_text)
+            else:
+                print("Failed to transcribe audio")
+                return ""
+        except Exception as e:
+            print(f"Error in Gemini ASR: {e}")
+            return ""
+    else:
+        # Try to record audio if PyAudio is available
+        try:
+            import pyaudio
+            import wave
+            import threading
+            
+            print("Audio recording functionality is available but not implemented in this simplified version.")
+            print("Please provide an audio file for transcription.")
+            return ""
+        except ImportError:
+            print("Audio recording not available. Please provide an audio file for transcription.")
+            return ""
+
 # Run the assistant
 if __name__ == "__main__":
     while True:
-        Text = SpeechRecognition()
+        # You can switch between the two implementations
+        print("Choose ASR method:")
+        print("1. Web Speech Recognition (default)")
+        print("2. Gemini ASR")
+        choice = input("Enter choice (1 or 2): ")
+        
+        if choice == "2":
+            # For demo, we'll use a placeholder
+            Text = GeminiSpeechRecognition("Data/sample_audio.wav")
+        else:
+            Text = SpeechRecognition()
         print(Text)

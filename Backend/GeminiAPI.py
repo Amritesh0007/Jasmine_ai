@@ -6,6 +6,8 @@ import PIL.Image
 import base64
 import io
 import time
+import wave
+import struct
 
 # Load environment variables
 env_path = os.path.join(os.path.dirname(__file__), "..", ".env")
@@ -204,6 +206,44 @@ class GeminiAPI:
         except Exception as e:
             print(f"Error debugging code: {e}")
             return None
+    
+    def speech_to_text(self, audio_file_path: str) -> Optional[str]:
+        """
+        Convert speech to text using Gemini's audio processing capabilities.
+        
+        Args:
+            audio_file_path (str): Path to the audio file (WAV format recommended)
+            
+        Returns:
+            Optional[str]: Transcribed text or None if failed
+        """
+        try:
+            if not self.model:
+                raise ValueError("Gemini API not configured. Check your API key.")
+            
+            # Check if file exists
+            if not os.path.exists(audio_file_path):
+                raise FileNotFoundError(f"Audio file not found: {audio_file_path}")
+            
+            # For Gemini, we can directly pass the audio file
+            # Gemini supports various audio formats
+            with open(audio_file_path, 'rb') as audio_file:
+                audio_data = audio_file.read()
+            
+            # Create a prompt for speech recognition
+            prompt = "Listen to this audio and transcribe exactly what is being said. Provide only the transcription without any additional text."
+            
+            # Use the model to process audio
+            response = self.model.generate_content([
+                prompt,
+                {'mime_type': 'audio/wav', 'data': audio_data}
+            ])
+            
+            return response.text.strip() if response.text else None
+            
+        except Exception as e:
+            print(f"Error in speech to text conversion: {e}")
+            return None
 
 # Global instance for easy access
 gemini_api = GeminiAPI()
@@ -232,3 +272,7 @@ def explain_code(code: str, language: str = "Python") -> Optional[str]:
 def debug_code(code: str, error: str = "", language: str = "Python") -> Optional[str]:
     """Debug code using Gemini."""
     return gemini_api.debug_code(code, error, language)
+
+def speech_to_text(audio_file_path: str) -> Optional[str]:
+    """Convert speech to text using Gemini."""
+    return gemini_api.speech_to_text(audio_file_path)
