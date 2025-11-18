@@ -233,12 +233,24 @@ class GeminiAPI:
             # Create a prompt for speech recognition
             prompt = "Listen to this audio and transcribe exactly what is being said. Provide only the transcription without any additional text."
             
+            # Determine MIME type based on file extension
+            if audio_file_path.lower().endswith('.mp3'):
+                mime_type = 'audio/mp3'
+            elif audio_file_path.lower().endswith('.wav'):
+                mime_type = 'audio/wav'
+            elif audio_file_path.lower().endswith('.flac'):
+                mime_type = 'audio/flac'
+            else:
+                mime_type = 'audio/wav'  # default
+            
             # Use the model to process audio
             response = self.model.generate_content([
                 prompt,
-                {'mime_type': 'audio/wav', 'data': audio_data}
+                {'mime_type': mime_type, 'data': audio_data}
             ])
             
+            # Add debug information
+            print(f"Gemini API response received. Response text: {response.text if response.text else 'None'}")
             return response.text.strip() if response.text else None
             
         except Exception as e:

@@ -613,9 +613,16 @@ def GraphicalUserInterface():
         def start_gemini_asr():
             print("Starting Gemini ASR...")
             try:
-                # Import and call the actual Gemini ASR function
+                # Import and call the actual Gemini ASR function with default audio file
                 from Backend.SpeechToText import GeminiSpeechRecognition
-                result = GeminiSpeechRecognition()
+                # Use the existing speech.mp3 file for demonstration
+                import os
+                audio_file_path = os.path.join("Data", "speech.mp3")
+                if os.path.exists(audio_file_path):
+                    result = GeminiSpeechRecognition(audio_file_path)
+                else:
+                    # Fallback if the file doesn't exist
+                    result = GeminiSpeechRecognition()
                 
                 # Show the result in a message box
                 from PyQt6.QtWidgets import QMessageBox
@@ -624,7 +631,7 @@ def GraphicalUserInterface():
                 if result:
                     msg.setText(f"Transcribed text:\n{result}")
                 else:
-                    msg.setText("Failed to transcribe audio or no speech detected.")
+                    msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
                 msg.setStyleSheet("""
                     background-color: #001f3f;
                     color: #00ffcc;
@@ -1034,9 +1041,16 @@ def GraphicalUserInterface():
             def start_gemini_asr():
                 print("Starting Gemini ASR...")
                 try:
-                    # Import and call the actual Gemini ASR function
+                    # Import and call the actual Gemini ASR function with default audio file
                     from Backend.SpeechToText import GeminiSpeechRecognition
-                    result = GeminiSpeechRecognition()
+                    # Use the existing speech.mp3 file for demonstration
+                    import os
+                    audio_file_path = os.path.join("Data", "speech.mp3")
+                    if os.path.exists(audio_file_path):
+                        result = GeminiSpeechRecognition(audio_file_path)
+                    else:
+                        # Fallback if the file doesn't exist
+                        result = GeminiSpeechRecognition()
                     
                     # Show the result in a message box
                     from PyQt5.QtWidgets import QMessageBox
@@ -1045,7 +1059,7 @@ def GraphicalUserInterface():
                     if result:
                         msg.setText(f"Transcribed text:\n{result}")
                     else:
-                        msg.setText("Failed to transcribe audio or no speech detected.")
+                        msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
                     msg.setStyleSheet("""
                         background-color: #001f3f;
                         color: #00ffcc;

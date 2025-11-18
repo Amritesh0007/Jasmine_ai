@@ -183,7 +183,8 @@ def GeminiSpeechRecognition(audio_file_path=None):
             transcribed_text = speech_to_text(audio_file_path)
             if transcribed_text:
                 print(f"Transcribed text: {transcribed_text}")
-                return QueryModifier(transcribed_text)
+                # For ASR, return the transcribed text as-is without modification
+                return transcribed_text.strip()
             else:
                 print("Failed to transcribe audio")
                 return ""
