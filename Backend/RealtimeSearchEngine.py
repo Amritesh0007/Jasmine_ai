@@ -196,12 +196,11 @@ def RealtimeSearchEngine(prompt):
     messages.append({"role": "user", "content": f"{prompt}"})
 
     # Check if this is a weather query
-    weather_keywords = ["weather", "temperature", "forecast", "climate", "rain", "snow", "sunny", "cloudy", "windy"]
+    weather_keywords = ["weather", "temperature", "forecast", "climate", "rain", "snow", "sunny", "cloudy", "windy", "hot", "cold"]
     is_weather_query = any(keyword in prompt.lower() for keyword in weather_keywords)
     
     if is_weather_query:
-        # Extract location from the prompt
-        # Improved approach to handle various query formats
+        # Extract location from the prompt with improved logic
         location = ""
         
         # Clean the prompt - remove parentheses and extra formatting
@@ -212,8 +211,21 @@ def RealtimeSearchEngine(prompt):
         if clean_prompt.startswith("jasmine "):
             clean_prompt = clean_prompt[8:]  # Remove "jasmine " from the beginning
         
-        # Simple approach: assume the location is after "in" or "at"
-        if " in " in clean_prompt:
+        # Improved location extraction for common patterns
+        # Pattern 1: "temperature in [location]"
+        if "temperature in " in clean_prompt:
+            location = clean_prompt.split("temperature in ", 1)[1].strip()
+        # Pattern 2: "weather in [location]"  
+        elif "weather in " in clean_prompt:
+            location = clean_prompt.split("weather in ", 1)[1].strip()
+        # Pattern 3: "how is the temperature in [location]"
+        elif "how is the temperature in " in clean_prompt:
+            location = clean_prompt.split("how is the temperature in ", 1)[1].strip()
+        # Pattern 4: "what is the weather like in [location]"
+        elif "what is the weather like in " in clean_prompt:
+            location = clean_prompt.split("what is the weather like in ", 1)[1].strip()
+        # Pattern 5: General "in [location]" pattern
+        elif " in " in clean_prompt:
             location_part = clean_prompt.split(" in ", 1)[1].strip("?").strip(".")
             # Remove common trailing words that are not part of location
             location_words = location_part.split()
@@ -260,14 +272,32 @@ def RealtimeSearchEngine(prompt):
                             location = " ".join(location_words) if location_words else location_part
                             break
         
-        # If still no location, try to extract a proper noun
-        if not location:
-            words = clean_prompt.split()
-            # Simple heuristic: assume capitalized words after weather keywords are locations
-            for i, word in enumerate(words):
-                if word.lower() in weather_keywords and i + 1 < len(words):
-                    location = words[i + 1]
+        # Special handling for common Indian states
+        indian_states = [
+            "andhra pradesh", "arunachal pradesh", "assam", "bihar", "chhattisgarh", "goa", 
+            "gujarat", "haryana", "himachal pradesh", "jharkhand", "karnataka", "kerala", 
+            "madhya pradesh", "maharashtra", "manipur", "meghalaya", "mizoram", "nagaland", 
+            "odisha", "punjab", "rajasthan", "sikkim", "tamil nadu", "telangana", "tripura", 
+            "uttar pradesh", "uttarakhand", "west bengal"
+        ]
+        
+        # If location is not found or is too short, try to match with Indian states
+        if not location or len(location) < 2:
+            for state in indian_states:
+                if state in clean_prompt:
+                    location = state
                     break
+        
+        # Clean up the location string
+        if location:
+            # Remove trailing punctuation and common words
+            location = location.strip().strip("?").strip(".").strip()
+            # Remove common trailing words
+            words = location.split()
+            if words and words[-1].lower() in ["today", "now", "currently"]:
+                location = " ".join(words[:-1])
+        
+        print(f"DEBUG: Extracted location for weather query: '{location}' from prompt: '{prompt}'")
         
         if location:
             # Get weather information directly
