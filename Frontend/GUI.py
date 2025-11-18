@@ -613,33 +613,195 @@ def GraphicalUserInterface():
         def start_gemini_asr():
             print("Starting Gemini ASR...")
             try:
-                # Import and call the actual Gemini ASR function with default audio file
-                from Backend.SpeechToText import GeminiSpeechRecognition
-                # Use the existing speech.mp3 file for demonstration
-                import os
-                audio_file_path = os.path.join("Data", "speech.mp3")
-                if os.path.exists(audio_file_path):
-                    result = GeminiSpeechRecognition(audio_file_path)
-                else:
-                    # Fallback if the file doesn't exist
-                    result = GeminiSpeechRecognition()
+                # Check if PyAudio is available and working
+                pyaudio_available = False
+                try:
+                    import pyaudio
+                    pa = pyaudio.PyAudio()
+                    pa.terminate()
+                    pyaudio_available = True
+                except:
+                    pyaudio_available = False
                 
-                # Show the result in a message box
-                from PyQt6.QtWidgets import QMessageBox
-                msg = QMessageBox()
-                msg.setWindowTitle("Gemini ASR Result")
-                if result and not result.startswith("Audio recording"):
-                    msg.setText(f"Transcribed text:\n{result}")
-                elif result and result.startswith("Audio recording"):
-                    msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
+                if pyaudio_available:
+                    # Show recording dialog
+                    from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpinBox, QMessageBox
+                    from PyQt6.QtCore import QTimer, QThread, pyqtSignal
+                    import pyaudio
+                    import wave
+                    import threading
+                    
+                    class RecordingDialog(QDialog):
+                        def __init__(self, parent=None):
+                            super().__init__(parent)
+                            self.setWindowTitle("Real-time Speech Recognition")
+                            self.setModal(True)
+                            self.resize(400, 200)
+                            
+                            layout = QVBoxLayout()
+                            
+                            # Instructions
+                            self.label = QLabel("Click 'Start Recording' and speak into your microphone")
+                            self.label.setStyleSheet("color: #00ffcc; font-family: 'Courier New', monospace;")
+                            self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                            layout.addWidget(self.label)
+                            
+                            # Duration selector
+                            duration_layout = QHBoxLayout()
+                            duration_layout.addWidget(QLabel("Recording duration (seconds):"))
+                            self.duration_spinbox = QSpinBox()
+                            self.duration_spinbox.setRange(1, 30)
+                            self.duration_spinbox.setValue(5)
+                            duration_layout.addWidget(self.duration_spinbox)
+                            layout.addLayout(duration_layout)
+                            
+                            # Status label
+                            self.status_label = QLabel("Ready to record")
+                            self.status_label.setStyleSheet("color: #74ee15; font-family: 'Courier New', monospace;")
+                            self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                            layout.addWidget(self.status_label)
+                            
+                            # Buttons
+                            button_layout = QHBoxLayout()
+                            self.record_button = QPushButton("🔴 Start Recording")
+                            self.record_button.clicked.connect(self.toggle_recording)
+                            self.transcribe_button = QPushButton("🔄 Transcribe")
+                            self.transcribe_button.clicked.connect(self.transcribe_recording)
+                            self.transcribe_button.setEnabled(False)
+                            self.close_button = QPushButton("❌ Close")
+                            self.close_button.clicked.connect(self.close)
+                            
+                            button_layout.addWidget(self.record_button)
+                            button_layout.addWidget(self.transcribe_button)
+                            button_layout.addWidget(self.close_button)
+                            layout.addLayout(button_layout)
+                            
+                            self.setLayout(layout)
+                            
+                            # Recording variables
+                            self.is_recording = False
+                            self.audio_file = "Data/recorded_speech.wav"
+                            self.recorded_audio = []
+                            
+                        def toggle_recording(self):
+                            if not self.is_recording:
+                                self.start_recording()
+                            else:
+                                self.stop_recording()
+                        
+                        def start_recording(self):
+                            try:
+                                self.is_recording = True
+                                self.record_button.setText("⏹️ Stop Recording")
+                                self.status_label.setText("🔴 Recording... Speak now!")
+                                self.transcribe_button.setEnabled(False)
+                                
+                                # Start recording in background thread
+                                self.record_thread = threading.Thread(target=self.record_audio)
+                                self.record_thread.start()
+                            except Exception as e:
+                                self.status_label.setText(f"Error: {str(e)}")
+                        
+                        def stop_recording(self):
+                            self.is_recording = False
+                            self.record_button.setText("🔴 Start Recording")
+                            self.status_label.setText("⏹️ Recording stopped. Click 'Transcribe' to process.")
+                            self.transcribe_button.setEnabled(True)
+                        
+                        def record_audio(self):
+                            try:
+                                FORMAT = pyaudio.paInt16
+                                CHANNELS = 1
+                                RATE = 16000
+                                CHUNK = 1024
+                                RECORD_SECONDS = self.duration_spinbox.value()
+                                
+                                audio = pyaudio.PyAudio()
+                                stream = audio.open(format=FORMAT, channels=CHANNELS,
+                                                   rate=RATE, input=True,
+                                                   frames_per_buffer=CHUNK)
+                                
+                                self.recorded_audio = []
+                                for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+                                    if not self.is_recording:
+                                        break
+                                    data = stream.read(CHUNK)
+                                    self.recorded_audio.append(data)
+                                
+                                stream.stop_stream()
+                                stream.close()
+                                audio.terminate()
+                                
+                                # Save the recorded audio
+                                import os
+                                os.makedirs("Data", exist_ok=True)
+                                with wave.open(self.audio_file, 'wb') as wf:
+                                    wf.setnchannels(CHANNELS)
+                                    wf.setsampwidth(audio.get_sample_size(FORMAT))
+                                    wf.setframerate(RATE)
+                                    wf.writeframes(b''.join(self.recorded_audio))
+                                    
+                            except Exception as e:
+                                print(f"Recording error: {e}")
+                                self.status_label.setText(f"Recording error: {str(e)}")
+                        
+                        def transcribe_recording(self):
+                            try:
+                                self.status_label.setText("🔄 Transcribing audio...")
+                                from Backend.GeminiAPI import speech_to_text
+                                result = speech_to_text(self.audio_file)
+                                if result:
+                                    self.status_label.setText("✅ Transcription complete!")
+                                    # Show result in message box
+                                    msg = QMessageBox()
+                                    msg.setWindowTitle("ASR Result")
+                                    msg.setText(f"Transcribed text:\n{result}")
+                                    msg.setStyleSheet("""
+                                        background-color: #001f3f;
+                                        color: #00ffcc;
+                                        font-family: 'Courier New', monospace;
+                                    """)
+                                    msg.exec()
+                                else:
+                                    self.status_label.setText("❌ Failed to transcribe audio")
+                            except Exception as e:
+                                self.status_label.setText(f"Transcription error: {str(e)}")
+                    
+                    # Show the recording dialog
+                    dialog = RecordingDialog()
+                    dialog.setStyleSheet("""
+                        background-color: #000428;
+                        color: #00ffcc;
+                        font-family: 'Courier New', monospace;
+                    """)
+                    dialog.exec()
                 else:
-                    msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
-                msg.setStyleSheet("""
-                    background-color: #001f3f;
-                    color: #00ffcc;
-                    font-family: 'Courier New', monospace;
-                """)
-                msg.exec()
+                    # Use the existing speech.mp3 file for demonstration
+                    from Backend.SpeechToText import GeminiSpeechRecognition
+                    import os
+                    audio_file_path = os.path.join("Data", "speech.mp3")
+                    if os.path.exists(audio_file_path):
+                        result = GeminiSpeechRecognition(audio_file_path)
+                    else:
+                        # Fallback if the file doesn't exist
+                        result = GeminiSpeechRecognition()
+                    
+                    # Show the result in a message box
+                    from PyQt6.QtWidgets import QMessageBox
+                    msg = QMessageBox()
+                    msg.setWindowTitle("Gemini ASR Result")
+                    if result and not result.startswith("Audio recording"):
+                        msg.setText(f"Transcribed text:\n{result}")
+                    elif result and result.startswith("Audio recording"):
+                        msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
+                    else:
+                        msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
+                    msg.setStyleSheet("""
+                        background-color: #001f3f;
+                        color: #00ffcc;
+                        font-family: 'Courier New', monospace;
+                    """)
+                    msg.exec()
             except Exception as e:
                 print(f"Error in Gemini ASR: {e}")
                 from PyQt6.QtWidgets import QMessageBox
@@ -1043,33 +1205,195 @@ def GraphicalUserInterface():
             def start_gemini_asr():
                 print("Starting Gemini ASR...")
                 try:
-                    # Import and call the actual Gemini ASR function with default audio file
-                    from Backend.SpeechToText import GeminiSpeechRecognition
-                    # Use the existing speech.mp3 file for demonstration
-                    import os
-                    audio_file_path = os.path.join("Data", "speech.mp3")
-                    if os.path.exists(audio_file_path):
-                        result = GeminiSpeechRecognition(audio_file_path)
-                    else:
-                        # Fallback if the file doesn't exist
-                        result = GeminiSpeechRecognition()
+                    # Check if PyAudio is available and working
+                    pyaudio_available = False
+                    try:
+                        import pyaudio
+                        pa = pyaudio.PyAudio()
+                        pa.terminate()
+                        pyaudio_available = True
+                    except:
+                        pyaudio_available = False
                     
-                    # Show the result in a message box
-                    from PyQt5.QtWidgets import QMessageBox
-                    msg = QMessageBox()
-                    msg.setWindowTitle("Gemini ASR Result")
-                    if result and not result.startswith("Audio recording"):
-                        msg.setText(f"Transcribed text:\n{result}")
-                    elif result and result.startswith("Audio recording"):
-                        msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
+                    if pyaudio_available:
+                        # Show recording dialog
+                        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QSpinBox, QMessageBox
+                        from PyQt5.QtCore import Qt
+                        import pyaudio
+                        import wave
+                        import threading
+                        
+                        class RecordingDialog(QDialog):
+                            def __init__(self, parent=None):
+                                super(RecordingDialog, self).__init__(parent)
+                                self.setWindowTitle("Real-time Speech Recognition")
+                                self.setModal(True)
+                                self.resize(400, 200)
+                                
+                                layout = QVBoxLayout()
+                                
+                                # Instructions
+                                self.label = QLabel("Click 'Start Recording' and speak into your microphone")
+                                self.label.setStyleSheet("color: #00ffcc; font-family: 'Courier New', monospace;")
+                                self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                                layout.addWidget(self.label)
+                                
+                                # Duration selector
+                                duration_layout = QHBoxLayout()
+                                duration_layout.addWidget(QLabel("Recording duration (seconds):"))
+                                self.duration_spinbox = QSpinBox()
+                                self.duration_spinbox.setRange(1, 30)
+                                self.duration_spinbox.setValue(5)
+                                duration_layout.addWidget(self.duration_spinbox)
+                                layout.addLayout(duration_layout)
+                                
+                                # Status label
+                                self.status_label = QLabel("Ready to record")
+                                self.status_label.setStyleSheet("color: #74ee15; font-family: 'Courier New', monospace;")
+                                self.status_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                                layout.addWidget(self.status_label)
+                                
+                                # Buttons
+                                button_layout = QHBoxLayout()
+                                self.record_button = QPushButton("🔴 Start Recording")
+                                self.record_button.clicked.connect(self.toggle_recording)
+                                self.transcribe_button = QPushButton("🔄 Transcribe")
+                                self.transcribe_button.clicked.connect(self.transcribe_recording)
+                                self.transcribe_button.setEnabled(False)
+                                self.close_button = QPushButton("❌ Close")
+                                self.close_button.clicked.connect(self.accept)
+                                
+                                button_layout.addWidget(self.record_button)
+                                button_layout.addWidget(self.transcribe_button)
+                                button_layout.addWidget(self.close_button)
+                                layout.addLayout(button_layout)
+                                
+                                self.setLayout(layout)
+                                
+                                # Recording variables
+                                self.is_recording = False
+                                self.audio_file = "Data/recorded_speech.wav"
+                                self.recorded_audio = []
+                                
+                            def toggle_recording(self):
+                                if not self.is_recording:
+                                    self.start_recording()
+                                else:
+                                    self.stop_recording()
+                            
+                            def start_recording(self):
+                                try:
+                                    self.is_recording = True
+                                    self.record_button.setText("⏹️ Stop Recording")
+                                    self.status_label.setText("🔴 Recording... Speak now!")
+                                    self.transcribe_button.setEnabled(False)
+                                    
+                                    # Start recording in background thread
+                                    self.record_thread = threading.Thread(target=self.record_audio)
+                                    self.record_thread.start()
+                                except Exception as e:
+                                    self.status_label.setText(f"Error: {str(e)}")
+                            
+                            def stop_recording(self):
+                                self.is_recording = False
+                                self.record_button.setText("🔴 Start Recording")
+                                self.status_label.setText("⏹️ Recording stopped. Click 'Transcribe' to process.")
+                                self.transcribe_button.setEnabled(True)
+                            
+                            def record_audio(self):
+                                try:
+                                    FORMAT = pyaudio.paInt16
+                                    CHANNELS = 1
+                                    RATE = 16000
+                                    CHUNK = 1024
+                                    RECORD_SECONDS = self.duration_spinbox.value()
+                                    
+                                    audio = pyaudio.PyAudio()
+                                    stream = audio.open(format=FORMAT, channels=CHANNELS,
+                                                       rate=RATE, input=True,
+                                                       frames_per_buffer=CHUNK)
+                                    
+                                    self.recorded_audio = []
+                                    for i in range(0, int(RATE / CHUNK * RECORD_SECONDS)):
+                                        if not self.is_recording:
+                                            break
+                                        data = stream.read(CHUNK)
+                                        self.recorded_audio.append(data)
+                                    
+                                    stream.stop_stream()
+                                    stream.close()
+                                    audio.terminate()
+                                    
+                                    # Save the recorded audio
+                                    import os
+                                    os.makedirs("Data", exist_ok=True)
+                                    with wave.open(self.audio_file, 'wb') as wf:
+                                        wf.setnchannels(CHANNELS)
+                                        wf.setsampwidth(audio.get_sample_size(FORMAT))
+                                        wf.setframerate(RATE)
+                                        wf.writeframes(b''.join(self.recorded_audio))
+                                        
+                                except Exception as e:
+                                    print(f"Recording error: {e}")
+                                    self.status_label.setText(f"Recording error: {str(e)}")
+                            
+                            def transcribe_recording(self):
+                                try:
+                                    self.status_label.setText("🔄 Transcribing audio...")
+                                    from Backend.GeminiAPI import speech_to_text
+                                    result = speech_to_text(self.audio_file)
+                                    if result:
+                                        self.status_label.setText("✅ Transcription complete!")
+                                        # Show result in message box
+                                        msg = QMessageBox()
+                                        msg.setWindowTitle("ASR Result")
+                                        msg.setText(f"Transcribed text:\n{result}")
+                                        msg.setStyleSheet("""
+                                            background-color: #001f3f;
+                                            color: #00ffcc;
+                                            font-family: 'Courier New', monospace;
+                                        """)
+                                        msg.exec_()
+                                    else:
+                                        self.status_label.setText("❌ Failed to transcribe audio")
+                                except Exception as e:
+                                    self.status_label.setText(f"Transcription error: {str(e)}")
+                        
+                        # Show the recording dialog
+                        dialog = RecordingDialog()
+                        dialog.setStyleSheet("""
+                            background-color: #000428;
+                            color: #00ffcc;
+                            font-family: 'Courier New', monospace;
+                        """)
+                        dialog.exec_()
                     else:
-                        msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
-                    msg.setStyleSheet("""
-                        background-color: #001f3f;
-                        color: #00ffcc;
-                        font-family: 'Courier New', monospace;
-                    """)
-                    msg.exec_()
+                        # Use the existing speech.mp3 file for demonstration
+                        from Backend.SpeechToText import GeminiSpeechRecognition
+                        import os
+                        audio_file_path = os.path.join("Data", "speech.mp3")
+                        if os.path.exists(audio_file_path):
+                            result = GeminiSpeechRecognition(audio_file_path)
+                        else:
+                            # Fallback if the file doesn't exist
+                            result = GeminiSpeechRecognition()
+                        
+                        # Show the result in a message box
+                        from PyQt5.QtWidgets import QMessageBox
+                        msg = QMessageBox()
+                        msg.setWindowTitle("Gemini ASR Result")
+                        if result and not result.startswith("Audio recording"):
+                            msg.setText(f"Transcribed text:\n{result}")
+                        elif result and result.startswith("Audio recording"):
+                            msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
+                        else:
+                            msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
+                        msg.setStyleSheet("""
+                            background-color: #001f3f;
+                            color: #00ffcc;
+                            font-family: 'Courier New', monospace;
+                        """)
+                        msg.exec_()
                 except Exception as e:
                     print(f"Error in Gemini ASR: {e}")
                     from PyQt5.QtWidgets import QMessageBox
