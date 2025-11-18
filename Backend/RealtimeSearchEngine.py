@@ -65,22 +65,60 @@ def GoogleSearch(query):
 def get_weather_info(location):
     """Get weather information for a specific location using Open-Meteo API"""
     try:
-        # First, we need to get the coordinates for the location
-        geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={location}&count=1&language=en&format=json"
-        geo_response = requests.get(geocoding_url, timeout=10)
-        geo_data = geo_response.json()
+        # List of location variations to try
+        location_variations = [location]
         
-        if 'results' not in geo_data or not geo_data['results']:
+        # Add common variations for better matching
+        location_lower = location.lower()
+        if ' ' in location_lower:
+            # For multi-word locations, also try without spaces or with underscores
+            location_variations.append(location_lower.replace(' ', ''))
+            location_variations.append(location_lower.replace(' ', '_'))
+        
+        # Add common alternative names for Indian states
+        state_alternatives = {
+            'andhra pradesh': ['Amaravati', 'Visakhapatnam', 'Andhra'],
+            'tamil nadu': ['Chennai', 'Madras', 'Tamil'],
+            'uttar pradesh': ['Lucknow', 'Kanpur', 'Uttar'],
+            'madhya pradesh': ['Bhopal', 'Indore', 'Madhya'],
+        }
+        
+        # Add alternatives if available
+        alternatives_to_add = []
+        for key, alternatives in state_alternatives.items():
+            if key in location_lower:
+                alternatives_to_add.extend(alternatives)
+        location_variations.extend(alternatives_to_add)
+        
+        # Try each location variation with a timeout
+        geo_data = None
+        resolved_location = None
+        lat = None
+        lon = None
+        
+        for loc in location_variations:
+            try:
+                # First, we need to get the coordinates for the location
+                geocoding_url = f"https://geocoding-api.open-meteo.com/v1/search?name={loc}&count=1&language=en&format=json"
+                geo_response = requests.get(geocoding_url, timeout=5)
+                geo_data = geo_response.json()
+                
+                if 'results' in geo_data and geo_data['results']:
+                    # Get coordinates
+                    lat = geo_data['results'][0]['latitude']
+                    lon = geo_data['results'][0]['longitude']
+                    resolved_location = geo_data['results'][0]['name']
+                    break
+            except Exception:
+                # Continue to next variation if this one fails
+                continue
+        
+        if not resolved_location:
             return f"Sorry, I couldn't find weather information for {location}."
-        
-        # Get coordinates
-        lat = geo_data['results'][0]['latitude']
-        lon = geo_data['results'][0]['longitude']
-        resolved_location = geo_data['results'][0]['name']
         
         # Get current weather
         weather_url = f"https://api.open-meteo.com/v1/forecast?latitude={lat}&longitude={lon}&current_weather=true&timezone=auto"
-        weather_response = requests.get(weather_url, timeout=10)
+        weather_response = requests.get(weather_url, timeout=5)
         weather_data = weather_response.json()
         
         if 'current_weather' not in weather_data:
