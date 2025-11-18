@@ -166,28 +166,33 @@ def RealtimeSearchEngine(prompt):
         # Improved approach to handle various query formats
         location = ""
         
-        # Handle queries that start with the assistant name
+        # Clean the prompt - remove parentheses and extra formatting
         clean_prompt = prompt.lower()
+        clean_prompt = clean_prompt.replace("(", "").replace(")", "").strip()
+        
+        # Handle queries that start with the assistant name
         if clean_prompt.startswith("jasmine "):
             clean_prompt = clean_prompt[8:]  # Remove "jasmine " from the beginning
         
         # Simple approach: assume the location is after "in" or "at"
         if " in " in clean_prompt:
-            location_part = clean_prompt.split(" in ", 1)[1].strip("?")
+            location_part = clean_prompt.split(" in ", 1)[1].strip("?").strip(".")
             # Remove common trailing words that are not part of location
             location_words = location_part.split()
-            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
-                location = " ".join(location_words[:-1])
-            else:
-                location = location_part
+            common_trailing_words = ["today", "now", "currently", "please", "thanks", "thank"]
+            # Remove trailing words one by one
+            while location_words and location_words[-1].lower() in common_trailing_words:
+                location_words = location_words[:-1]
+            location = " ".join(location_words) if location_words else location_part
         elif " at " in clean_prompt:
-            location_part = clean_prompt.split(" at ", 1)[1].strip("?")
+            location_part = clean_prompt.split(" at ", 1)[1].strip("?").strip(".")
             # Remove common trailing words that are not part of location
             location_words = location_part.split()
-            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
-                location = " ".join(location_words[:-1])
-            else:
-                location = location_part
+            common_trailing_words = ["today", "now", "currently", "please", "thanks", "thank"]
+            # Remove trailing words one by one
+            while location_words and location_words[-1].lower() in common_trailing_words:
+                location_words = location_words[:-1]
+            location = " ".join(location_words) if location_words else location_part
         else:
             # Try to find location after weather-related keywords
             for keyword in weather_keywords:
@@ -197,22 +202,24 @@ def RealtimeSearchEngine(prompt):
                         # Look for the location after the keyword
                         after_keyword = parts[1].strip()
                         if " in " in after_keyword:
-                            location_part = after_keyword.split(" in ", 1)[1].strip("?")
+                            location_part = after_keyword.split(" in ", 1)[1].strip("?").strip(".")
                             # Remove common trailing words that are not part of location
                             location_words = location_part.split()
-                            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
-                                location = " ".join(location_words[:-1])
-                            else:
-                                location = location_part
+                            common_trailing_words = ["today", "now", "currently", "please", "thanks", "thank"]
+                            # Remove trailing words one by one
+                            while location_words and location_words[-1].lower() in common_trailing_words:
+                                location_words = location_words[:-1]
+                            location = " ".join(location_words) if location_words else location_part
                             break
                         elif " at " in after_keyword:
-                            location_part = after_keyword.split(" at ", 1)[1].strip("?")
+                            location_part = after_keyword.split(" at ", 1)[1].strip("?").strip(".")
                             # Remove common trailing words that are not part of location
                             location_words = location_part.split()
-                            if location_words and location_words[-1].lower() in ["today", "now", "currently"]:
-                                location = " ".join(location_words[:-1])
-                            else:
-                                location = location_part
+                            common_trailing_words = ["today", "now", "currently", "please", "thanks", "thank"]
+                            # Remove trailing words one by one
+                            while location_words and location_words[-1].lower() in common_trailing_words:
+                                location_words = location_words[:-1]
+                            location = " ".join(location_words) if location_words else location_part
                             break
         
         # If still no location, try to extract a proper noun
