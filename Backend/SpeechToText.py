@@ -192,18 +192,29 @@ def GeminiSpeechRecognition(audio_file_path=None):
             print(f"Error in Gemini ASR: {e}")
             return ""
     else:
-        # Try to record audio if PyAudio is available
+        # Try to record audio if PyAudio is available and working
         try:
             import pyaudio
             import wave
             import threading
             
-            print("Audio recording functionality is available but not implemented in this simplified version.")
-            print("Please provide an audio file for transcription.")
-            return ""
+            # Test if PyAudio is actually working (not just installed)
+            try:
+                pa = pyaudio.PyAudio()
+                pa.terminate()
+                print("Audio recording functionality is available.")
+                print("Audio recording feature is not implemented in this GUI version.")
+                print("Please provide an audio file for transcription or use the command line version.")
+                return "Audio recording feature not available in GUI. Please provide an audio file."
+            except Exception as e:
+                print(f"PyAudio is installed but not working properly: {e}")
+                print("Audio recording not available due to PyAudio issues.")
+                return "Audio recording not available. Please provide an audio file for transcription."
         except ImportError:
-            print("Audio recording not available. Please provide an audio file for transcription.")
-            return ""
+            print("PyAudio library not installed. Audio recording not available.")
+            print("To install PyAudio, try: pip install pyaudio")
+            print("Note: On Apple Silicon Macs, you may need to install portaudio first.")
+            return "Audio recording not available. Please provide an audio file for transcription."
 
 # Run the assistant
 if __name__ == "__main__":

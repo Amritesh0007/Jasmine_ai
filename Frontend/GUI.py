@@ -628,8 +628,10 @@ def GraphicalUserInterface():
                 from PyQt6.QtWidgets import QMessageBox
                 msg = QMessageBox()
                 msg.setWindowTitle("Gemini ASR Result")
-                if result:
+                if result and not result.startswith("Audio recording"):
                     msg.setText(f"Transcribed text:\n{result}")
+                elif result and result.startswith("Audio recording"):
+                    msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
                 else:
                     msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
                 msg.setStyleSheet("""
@@ -1056,8 +1058,10 @@ def GraphicalUserInterface():
                     from PyQt5.QtWidgets import QMessageBox
                     msg = QMessageBox()
                     msg.setWindowTitle("Gemini ASR Result")
-                    if result:
+                    if result and not result.startswith("Audio recording"):
                         msg.setText(f"Transcribed text:\n{result}")
+                    elif result and result.startswith("Audio recording"):
+                        msg.setText(f"{result}\n\nTo use audio recording, please run the command line version or ensure PyAudio is properly installed.")
                     else:
                         msg.setText("Failed to transcribe audio or no speech detected.\n\nPlease ensure you have an audio file in the Data directory.")
                     msg.setStyleSheet("""
